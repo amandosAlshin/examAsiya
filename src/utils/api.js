@@ -4,7 +4,7 @@ const headers = new Headers({
     'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
 });
 
-export default function api (url, params) {
+export default function api(url, params) {
     return fetch(`${apiUrl}${url}`, params)
         .then(res => res.json())
 }

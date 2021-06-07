@@ -1,5 +1,6 @@
-import React,{useEffect} from 'react';
+import React,{ useEffect, useContext } from 'react';
 import clsx from 'clsx';
+import { withRouter } from 'react-router-dom';
 import { makeStyles , withStyles} from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Button from '@material-ui/core/Button';
@@ -21,10 +22,11 @@ import { green } from '@material-ui/core/colors';
 import Divider from '@material-ui/core/Divider';
 import SignIn from './SignIn';
 import queryString from 'query-string'
+import api from '../utils/api';
+import { ExamContext } from '../Router'
 
 
 const useStyles = makeStyles((theme) => ({
-    
   root: {
     display: 'flex',
   },
@@ -78,10 +80,14 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 
-export default function Exam() {
+function Exam(props) {
+  const examInfoContext = useContext(ExamContext);
   const classes = useStyles();
   const [open, setOpen] = React.useState(true);
   const [value, setValue] = React.useState('female');
+  const [examInfo, setExamInfo] = React.useState();
+  const [activeQuestion, setActiveQuestion] = React.useState(0);
+  const [answers, setAnswers] = React.useState(0);
 
   const handleChangeRadio = (event) => {
     setValue(event.target.value);
@@ -89,12 +95,11 @@ export default function Exam() {
   const handleDrawerOpen = () => {
     setOpen(true);
   };
-  const questionList = ()=>{
+  const questionList = () => {
     var question = [];
     for (let index = 0; index < 26; index++) {
         question.push(index)
-        
-    } 
+    }
     return  question
   }
   const [state, setState] = React.useState({
@@ -102,6 +107,18 @@ export default function Exam() {
     jason: false,
     antoine: false,
   });
+
+  useEffect(() => {
+    api('api/exam/exam-info', { method: 'POST' } )
+      .then(res => {
+        console.log({ res });
+      })
+      .catch(err => {
+        console.log({ err })
+      })
+  }, [])
+
+  console.log({ match: props.match });
 
   const handleChange = (event) => {
     setState({ ...state, [event.target.name]: event.target.checked });
@@ -162,18 +179,21 @@ export default function Exam() {
       <main className={classes.content}>
             <div className={classes.appBarSpacer} />
             <Container maxWidth="lg" className={classes.container}>
+              {activeQuestion && (
                 <Card className={classes.root}>
                     <CardContent>
                         <Typography component="h1" variant="h2" align="left" color="textPrimary">
-                            Сенің атың кім?
+                            {activeQuestion.text}
                         </Typography>
                         <div style={{margin: "25px", textAlign: "left"}}>
                             <FormControl component="fieldset">
-                                <RadioGroup aria-label="gender" name="gender1" value={value} onChange={handleChangeRadio}>
-                                    <FormControlLabel value="female" control={<Radio />} label="Amandos" />
-                                    <FormControlLabel value="male" control={<Radio />} label="Daulet" />
-                                    <FormControlLabel value="other" control={<Radio />} label="Dauren" />
-                                </RadioGroup>
+                              <RadioGroup aria-label="gender" name={activeQuestion.id}  onChange={(event) => handleChangeRadio(event, activeQuestion)}>
+                                {
+                                  activeQuestion.answers.map(a => (
+                                        <FormControlLabel value={a.value} control={<Radio />} label={a.label} />
+                                  ))
+                                }
+                              </RadioGroup>
                             </FormControl>
                         </div>
                         <Divider />
@@ -200,12 +220,14 @@ export default function Exam() {
                         
                     </CardContent>
                 </Card>
+              )}
+                
             </Container>
             <div className={classes.question}>
                 {
                     questionList().map((index)=>{
                         return (
-                            <Button key={index}variant="contained" color="primary">
+                            <Button key={index} variant="contained" color="primary" onClick={() => setActiveQuestion(questionList[index])}>
                                 {index} сұрақ
                             </Button>
                         )
@@ -216,3 +238,5 @@ export default function Exam() {
     </div>
   );
 }
+
+export default withRouter(Exam);
